@@ -1,0 +1,20 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "cortex-debug",
+            "request": "launch",
+            "servertype": "openocd",
+            "cwd": "${workspaceRoot}",
+            "executable": "./target/thumbv7em-none-eabi/debug/rusty-blink",
+            "name": "Debug (OpenOCD)",
+            "device": "STM32F429ZITx",
+            "svdFile": "${workspaceRoot}/STM32F429.svd",
+            "configFiles": [
+                "interface/stlink-v2-1.cfg",
+                "target/stm32f4x.cfg"
+            ],
+            "runToMain": true
+        }
+    ]
+}

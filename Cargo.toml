@@ -1,0 +1,21 @@
+[package]
+name = "rusty-blink"
+version = "0.1.0"
+authors = ["Artem Golovinsky <artemgolovinsky@gmail.com>"]
+edition = "2018"
+
+[profile.release]
+opt-level = 'z' # turn on maximum optimizations. We only have 64kB
+lto = true      # Link-time-optimizations for further size reduction
+
+[dependencies]
+# stm32f407g-disc = "0.4.1"
+cortex-m = "0.7.2"
+cortex-m-rt = "0.6.13"
+# Panic behaviour, see https://crates.io/keywords/panic-impl for alternatives
+panic-halt = "0.2.0"
+
+[dependencies.stm32f4]
+version = "0.13.0"
+features = ["stm32f429", "rt"]
+
