@@ -53,4 +53,8 @@ impl<'a> Clocking<'a> {
     pub fn gpiog_enable(&self)  {
         self.rcc.ahb1enr.modify(|_, w| w.gpiogen().enabled());
     }
+
+    pub fn tim6_enable(&self) {
+        self.rcc.apb1enr.modify(|_, w| w.tim6en().enabled());
+    }
 }
