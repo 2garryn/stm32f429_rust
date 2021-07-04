@@ -50,11 +50,18 @@ impl<'a> Clocking<'a> {
     pub fn gpiod_enable(&self)  {
         self.rcc.ahb1enr.modify(|_, w| w.gpioden().enabled());
     }
+    pub fn gpioc_enable(&self)  {
+        self.rcc.ahb1enr.modify(|_, w| w.gpiocen().enabled());
+    }
     pub fn gpiog_enable(&self)  {
         self.rcc.ahb1enr.modify(|_, w| w.gpiogen().enabled());
     }
-
     pub fn tim6_enable(&self) {
         self.rcc.apb1enr.modify(|_, w| w.tim6en().enabled());
+    }
+
+    pub fn sdio_enable(&self) {
+        self.rcc.apb2enr.modify(|_r, w| w.sdioen().set_bit());
+
     }
 }

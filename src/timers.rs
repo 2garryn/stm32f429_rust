@@ -156,10 +156,10 @@ fn TIM6_DAC() {
         if t > 0 { Some(t - 1) }
         else { None }
     };
-    T1.fetch_update(Ordering::Relaxed, Ordering::Relaxed, f);
-    T2.fetch_update(Ordering::Relaxed, Ordering::Relaxed, f);
-    T3.fetch_update(Ordering::Relaxed, Ordering::Relaxed, f);
-    T4.fetch_update(Ordering::Relaxed, Ordering::Relaxed, f);
+    let _ = T1.fetch_update(Ordering::Relaxed, Ordering::Relaxed, f);
+    let _ = T2.fetch_update(Ordering::Relaxed, Ordering::Relaxed, f);
+    let _ = T3.fetch_update(Ordering::Relaxed, Ordering::Relaxed, f);
+    let _ = T4.fetch_update(Ordering::Relaxed, Ordering::Relaxed, f);
     
     ()
 }
