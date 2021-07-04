@@ -10,6 +10,7 @@ pub enum WaitResp {
     NoResponse, ShortResponse,
     NoResponse2, LongResponse
 }
+pub enum DataTransfMode { Block, Stream }
 
 pub struct Rca(u16);
 impl Rca {
@@ -35,13 +36,15 @@ pub struct Cmd {
 
 
 pub struct SdioApi {
-    sdio: stm32f429::SDIO
+    sdio: stm32f429::SDIO,
+    block_size: u32
 }
 
 impl SdioApi {
     pub fn new(sdio: stm32f429::SDIO) -> Self {
         Self {
-            sdio: sdio
+            sdio: sdio,
+            block_size: 512
         }
     }
 
@@ -74,6 +77,25 @@ impl SdioApi {
     pub fn bypass_div(&self) {
         self.sdio.clkcr.modify(|_r, w| w.bypass().enabled().clken().enabled());
     }
+    pub fn default_block_size(&self) -> u32 {
+        self.block_size
+    }
+
+    pub fn preread_config(&self, dtimeout: u32, dlength: u32, transfer_mode: DataTransfMode) {
+        self.sdio.dtimer.modify(|_, w| w.datatime().bits(dtimeout));
+        self.sdio.dlen.modify(|_, w|w.datalength().bits(dlength));
+        self.sdio.dctrl.modify(|_, w| {
+            // 512 bytes
+            w.dblocksize().bits(0b1001)
+            .dtdir().card_to_controller()
+            .dten().enabled();
+            match transfer_mode {
+                DataTransfMode::Block => w.dtmode().block_mode(),
+                DataTransfMode::Stream => w.dtmode().stream_mode()
+            }
+        });
+    }
+
     pub fn no_op(&self, clk: u64) {
         for _ in 0..clk {
             cortex_m::asm::nop();
@@ -118,6 +140,22 @@ impl SdioApi {
         Ok(r)
     }
 
+    pub fn cmd13(&self, rca: &Rca) -> Result<CardStatus, CardError> {
+        self.cmd_send_simple(13, rca.as_cmd_arg(), WaitResp::ShortResponse);
+        let r = self.parse_response1(13)?;
+        Ok(r)
+    }
+
+    pub fn cmd16(&self) -> Result<CardStatus, CardError> {
+        self.cmd_send_simple(16, self.block_size, WaitResp::ShortResponse);
+        let r = self.parse_response1(16)?;
+        Ok(r)
+    }
+    pub fn cmd17(&self, block_addr: u32) -> Result<CardStatus, CardError> {
+        self.cmd_send_simple(17, block_addr, WaitResp::ShortResponse);
+        let r = self.parse_response1(17)?;
+        Ok(r)
+    }
     // SEND_IF_COND available only for card v2.0
     pub fn cmd8(&self) -> Result<(), CardError> {
         /*

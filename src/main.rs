@@ -39,14 +39,26 @@ fn main() -> ! {
    // let res = sd.init(&mut periph.GPIOD, &mut periph.GPIOC);
     match res {
         Ok(c) => {
-            cl.gpiog_enable();
-            let gpiog = &periph.GPIOG;
-            gpiog.moder.modify(|_, w| w.moder13().output());
-            gpiog.otyper.modify(|_, w| w.ot13().push_pull());
-            gpiog.ospeedr.modify(|_, w| w.ospeedr13().very_high_speed());
-            gpiog.odr.modify(|r, w| {
-                    w.odr13().high()
-            });
+            let mut buf: [u8; 512] = [0; 512]; 
+            let r = c.read_block(&mut buf, 1);
+            match r {
+                Ok(_) => {
+                    cl.gpiog_enable();
+                    let gpiog = &periph.GPIOG;
+                    gpiog.moder.modify(|_, w| w.moder13().output());
+                    gpiog.otyper.modify(|_, w| w.ot13().push_pull());
+                    gpiog.ospeedr.modify(|_, w| w.ospeedr13().very_high_speed());
+                    gpiog.odr.modify(|r, w| {
+                            w.odr13().high()
+                    });
+                },
+                _=> {
+                    
+                }
+            }
+
+
+
         },
         _ => {
             /*

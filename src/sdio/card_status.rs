@@ -56,7 +56,7 @@ impl CardStatus {
 
     fn any_err_match_wrap(&self) -> Result<(), CardStatusErr> {
         let f = |status: u32, err: CardStatusErr| -> Result<(), CardStatusErr> {
-            if (status & (1 << (err as u8))) != 0 {
+            if (status & (1 << (err as u32))) != 0 {
                 return Err(err)
             }
             Ok(())
@@ -79,7 +79,10 @@ impl CardStatus {
         Ok(())
     }
 
-    pub fn is_flag(status: u32, sts: CardStatusSts) -> bool {
-        (status & (1 << (sts as u8))) != 0
+    pub fn ready_for_data(&self) -> bool { self.is_flag(CardStatusSts::ReadyForData) }
+    
+
+    pub fn is_flag(&self, sts: CardStatusSts) -> bool {
+        (self.status & (1 << (sts as u32))) != 0
     }
 }
