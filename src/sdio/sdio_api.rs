@@ -75,7 +75,7 @@ impl SdioApi {
         self.sdio.clkcr.modify(|_r, w| w.widbus().bus_width4());
     }
     pub fn bypass_div(&self) {
-        self.sdio.clkcr.modify(|_r, w| w.bypass().enabled().clken().enabled());
+        self.sdio.clkcr.modify(|_r, w| w.bypass().enabled());
     }
     pub fn default_block_size(&self) -> u32 {
         self.block_size
