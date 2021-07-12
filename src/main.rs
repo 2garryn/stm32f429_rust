@@ -19,6 +19,7 @@ mod sdio;
 
 
 static mut BUF: [u8; 512] = [0; 512];
+static mut BUF2: [u8; 1024] = [0; 1024];
 
 #[entry]
 fn main() -> ! {
@@ -39,20 +40,18 @@ fn main() -> ! {
    // let res = sd.init(&mut periph.GPIOD, &mut periph.GPIOC);
     match res {
         Ok(c) => {
-            let mut buf: [u8; 512] = [0; 512]; 
-             unsafe { 
-                 /*
-                    let ra = c.read_block(&mut BUF, 0);    
-                    let cs = sdio::crc32(&BUF);
-                */
-                    let ra = c.read_block_dma(&mut BUF, 0);
-                    c.read_block_completed();
-                    let cs = sdio::crc32(&BUF);
-                    if cs == 0x171AC84F {
-                        gpiog.odr.modify(|r, w| { w.odr13().high() });
-                    };
-                    
-            }
+            let mut b1: [u8; 1024] = [0; 1024];
+            let ra = c.read_multi_block_dma(&mut b1, 0).unwrap();
+            c.await_finished(ra).unwrap();
+            if sdio::crc32(&b1) == 0xC7DA235B {
+                gpiog.odr.modify(|r, w| { w.odr13().high() });
+            };
+            let mut b2: [u8; 512] = [0; 512];
+            let ra2 = c.read_block_dma(&mut b2, 0).unwrap();
+            c.await_finished(ra2).unwrap();
+            if sdio::crc32(&b2) == 0x171AC84F {
+                gpiog.odr.modify(|r, w| { w.odr13().low() });
+            };  
         },
         _ => {
 

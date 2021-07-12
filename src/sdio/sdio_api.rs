@@ -91,6 +91,13 @@ impl SdioApi {
     pub fn dma_enable(&self) {
         self.sdio.dctrl.modify(|_, w| w.dmaen().enabled())
     }
+    pub fn dma_disable(&self) {
+        self.sdio.dctrl.modify(|_, w| w.dmaen().disabled())
+    }
+
+    pub fn dctrl_disabled(&self) {
+        self.sdio.dctrl.modify(|_, w| { w.dten().disabled() })
+    } 
 
     pub fn preread_config(&self, dtimeout: u32, dlength: u32, transfer_mode: DataTransfMode) {
         self.sdio.dtimer.modify(|_, w| w.datatime().bits(dtimeout));
@@ -152,6 +159,11 @@ impl SdioApi {
             }
         }
 
+        self.clear_data_flags();
+        Ok(())
+    }
+
+    pub fn clear_data_flags(&self) {
         self.sdio.icr.modify(|_, w| 
             w.dcrcfailc().set_bit()
             .dtimeoutc().set_bit()
@@ -160,9 +172,6 @@ impl SdioApi {
             .dataendc().set_bit()
             .dbckendc().set_bit()
         );
-        
-        Ok(())
-
     }
 
     pub fn no_op(&self, clk: u64) {
@@ -209,6 +218,11 @@ impl SdioApi {
         Ok(r)
     }
 
+    pub fn cmd12(&self) -> Result<CardStatus, CardError> {
+        self.cmd_send_simple(12, 0, WaitResp::ShortResponse);
+        let r = self.parse_response1(12)?;
+        Ok(r)
+    }
     pub fn cmd13(&self, rca: &Rca) -> Result<CardStatus, CardError> {
         self.cmd_send_simple(13, rca.as_cmd_arg(), WaitResp::ShortResponse);
         let r = self.parse_response1(13)?;
@@ -223,6 +237,11 @@ impl SdioApi {
     pub fn cmd17(&self, block_addr: u32) -> Result<CardStatus, CardError> {
         self.cmd_send_simple(17, block_addr, WaitResp::ShortResponse);
         let r = self.parse_response1(17)?;
+        Ok(r)
+    }
+    pub fn cmd18(&self, block_addr: u32) -> Result<CardStatus, CardError> {
+        self.cmd_send_simple(18, block_addr, WaitResp::ShortResponse);
+        let r = self.parse_response1(18)?;
         Ok(r)
     }
     

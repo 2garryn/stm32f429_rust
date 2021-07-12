@@ -16,7 +16,7 @@ use sdio_dma::SdioDma;
 use crc::{Crc, CRC_32_ISO_HDLC};
 
 pub const CRC32: Crc<u32> = Crc::<u32>::new(&CRC_32_ISO_HDLC);
-
+#[derive(Debug)]
 pub enum CardError {
     Timeout(u8),
     Ccrcfail(u8),
@@ -26,7 +26,8 @@ pub enum CardError {
     PowerDown,
     R6ComCrcError,
     R6IllegalCommand, 
-    R6Error
+    R6Error,
+    InvalidBufferLen
 }
 
 

@@ -49,7 +49,8 @@ impl<'a> SdioDma<'a>  {
         // set dir from memory to peripheral, set buffer ptr, set buffer length
 
         self.dma.st[STREAM3].m0ar.write(|w| unsafe { w.m0a().bits(buf.as_ptr() as u32) });
-        //self.dma.st[STREAM3].ndtr.modify(|_, w| w.ndt().bits(16 as u16));
+        //let ndtr = buf.len() / 4; 
+        //self.dma.st[STREAM3].ndtr.modify(|_, w| w.ndt().bits(ndtr as u16));
         self.dma.st[STREAM3].cr.modify(|_r, w| w.en().enabled());
 
     }
