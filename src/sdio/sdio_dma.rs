@@ -37,20 +37,20 @@ impl<'a> SdioDma<'a>  {
             .pinc().clear_bit()
             .pfctrl().set_bit());
         self.dma.st[STREAM3].fcr.write(|w| w.dmdis().set_bit().fth().full());
+        self.dma.st[STREAM3].cr.modify(|_r, w| w.dir().peripheral_to_memory());
     }
 
     pub fn p2m(&self, buf: &mut [u8]) {
-        self.dma.st[STREAM3].cr.modify(|_r, w| w.en().clear_bit());
+        self.dma.st[STREAM3].cr.modify(|_r, w| w.en().disabled());
             // clean stream 3 interruption flag
         let clean_flag = 0b111101 << 22;
         self.dma.lifcr.write(|w| unsafe { w.bits(clean_flag) });
 
         // set dir from memory to peripheral, set buffer ptr, set buffer length
-        self.dma.st[STREAM3].cr.modify(|_r, w| w.dir().memory_to_peripheral());
-        self.dma.st[STREAM3].m0ar.write(|w| unsafe { w.m0a().bits(buf.as_ptr() as u32) });
-        self.dma.st[STREAM3].ndtr.write(|w| w.ndt().bits(buf.len() as u16));
 
-        self.dma.st[STREAM3].cr.modify(|_r, w| w.en().set_bit());
+        self.dma.st[STREAM3].m0ar.write(|w| unsafe { w.m0a().bits(buf.as_ptr() as u32) });
+        //self.dma.st[STREAM3].ndtr.modify(|_, w| w.ndt().bits(16 as u16));
+        self.dma.st[STREAM3].cr.modify(|_r, w| w.en().enabled());
 
     }
 

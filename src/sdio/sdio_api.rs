@@ -74,10 +74,12 @@ impl SdioApi {
     pub fn set_wide_bus(&self) {
         self.sdio.clkcr.modify(|_r, w| w.widbus().bus_width4());
     }
-    pub fn bypass_div(&self) {
+    pub fn increase_clockrate(&self) {
+        
         self.sdio.clkcr.modify(|_, w| 
-            w.clkdiv().bits(30) // 300khz
+            w.clkdiv().bits(0) 
         );
+        
         //self.sdio.clkcr.modify(|_r, w| w.bypass().enabled());
     }
     pub fn default_block_size(&self) -> u32 {

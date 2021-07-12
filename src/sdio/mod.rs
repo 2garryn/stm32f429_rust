@@ -32,7 +32,7 @@ pub enum CardError {
 
 pub fn new<'a>(sdio: stm32f429::SDIO, dma: &'a stm32f429::DMA2, gpiod: &mut stm32f429::GPIOD, gpioc: &mut stm32f429::GPIOC) -> Result<Card<'a>, CardError> {
     let tdma = SdioDma::new(dma);
-//    tdma.init();
+    tdma.init();
 
 
     gpioc.moder.modify(|_r, w|
@@ -98,7 +98,7 @@ pub fn new<'a>(sdio: stm32f429::SDIO, dma: &'a stm32f429::DMA2, gpiod: &mut stm3
     }
     
     sdio_api.clk_disabled();
-    sdio_api.bypass_div();
+    sdio_api.increase_clockrate();
     sdio_api.clk_enabled();
     
     if let Some(e) = sdio_api.cmd55(&new_rca)?.any_error() {

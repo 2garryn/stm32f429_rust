@@ -41,11 +41,17 @@ fn main() -> ! {
         Ok(c) => {
             let mut buf: [u8; 512] = [0; 512]; 
              unsafe { 
+                 /*
                     let ra = c.read_block(&mut BUF, 0);    
                     let cs = sdio::crc32(&BUF);
-                    if cs == 0xF5666709 {
+                */
+                    let ra = c.read_block_dma(&mut BUF, 0);
+                    c.read_block_completed();
+                    let cs = sdio::crc32(&BUF);
+                    if cs == 0x171AC84F {
                         gpiog.odr.modify(|r, w| { w.odr13().high() });
                     };
+                    
             }
         },
         _ => {
