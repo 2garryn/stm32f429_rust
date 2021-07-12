@@ -3,22 +3,26 @@ use crate::sdio::sdio_api::Rca;
 use crate::sdio::sdio_api::SdioApi;
 use crate::sdio::sdio_api::DataTransfMode;
 use crate::sdio::CardError;
+use crate::sdio::sdio_dma::SdioDma;
 
-pub struct Card {
+pub struct Card<'a> {
     api: SdioApi,
-    rca: Rca
+    rca: Rca,
+    dma: SdioDma<'a>
 }
 
-impl Card {
-    pub(crate) fn new(api: SdioApi, rca: Rca) -> Self {
+impl<'a> Card <'a> {
+    pub(crate) fn new(api: SdioApi, dma: SdioDma<'a>, rca: Rca) -> Self {
         Card {
             api: api,
-            rca: rca
+            rca: rca,
+            dma: dma
         }
     }
 
     pub fn read_block(&self, buf: &mut [u8], block_addr: u32) -> Result<(), CardError> {
         self.wait_ready_for_data()?;
+
         if let Some(e) = self.api.cmd16()?.any_error() {
             return Err(CardError::StatusR1Err(e));
         };
@@ -27,8 +31,18 @@ impl Card {
             return Err(CardError::StatusR1Err(e));
         };
         
-
+        let _ = self.api.read_block(buf);
+        
         Ok(())
+    }
+
+    pub fn read_block_completed(&self)  {
+        while !self.dma.p2m_completed() {};
+        loop {
+            if self.api.datacount() == 0 {
+                break;
+            }
+        }
     }
 
     fn wait_ready_for_data(&self) -> Result<(), CardError> {

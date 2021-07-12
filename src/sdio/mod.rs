@@ -6,11 +6,16 @@ mod ocr;
 mod cid;
 mod csd;
 mod sdio_api;
+mod sdio_dma;
 
 use card_status::CardStatusErr;
 use sdio_api::Rca;
 use sdio_api::SdioApi;
 use card::Card;
+use sdio_dma::SdioDma;
+use crc::{Crc, CRC_32_ISO_HDLC};
+
+pub const CRC32: Crc<u32> = Crc::<u32>::new(&CRC_32_ISO_HDLC);
 
 pub enum CardError {
     Timeout(u8),
@@ -25,7 +30,11 @@ pub enum CardError {
 }
 
 
-pub fn new(sdio: stm32f429::SDIO, gpiod: &mut stm32f429::GPIOD, gpioc: &mut stm32f429::GPIOC) -> Result<Card, CardError> {
+pub fn new<'a>(sdio: stm32f429::SDIO, dma: &'a stm32f429::DMA2, gpiod: &mut stm32f429::GPIOD, gpioc: &mut stm32f429::GPIOC) -> Result<Card<'a>, CardError> {
+    let tdma = SdioDma::new(dma);
+//    tdma.init();
+
+
     gpioc.moder.modify(|_r, w|
         w.moder8().alternate()
         .moder9().alternate()
@@ -87,9 +96,11 @@ pub fn new(sdio: stm32f429::SDIO, gpiod: &mut stm32f429::GPIOD, gpioc: &mut stm3
     if let Some(e) = sdio_api.cmd7(&new_rca)?.any_error() {
         return Err(CardError::StatusR1Err(e));
     }
+    
     sdio_api.clk_disabled();
     sdio_api.bypass_div();
     sdio_api.clk_enabled();
+    
     if let Some(e) = sdio_api.cmd55(&new_rca)?.any_error() {
         return Err(CardError::StatusR1Err(e));
     }
@@ -97,7 +108,13 @@ pub fn new(sdio: stm32f429::SDIO, gpiod: &mut stm32f429::GPIOD, gpioc: &mut stm3
     sdio_api.clk_disabled();
     sdio_api.set_wide_bus();
     sdio_api.clk_enabled();
+
+
     
-    return Ok(Card::new(sdio_api, new_rca))
+    return Ok(Card::new(sdio_api, tdma, new_rca))
     
+}
+
+pub fn crc32(data: &[u8]) -> u32 {
+    CRC32.checksum(data)
 }

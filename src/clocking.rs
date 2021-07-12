@@ -62,6 +62,9 @@ impl<'a> Clocking<'a> {
 
     pub fn sdio_enable(&self) {
         self.rcc.apb2enr.modify(|_r, w| w.sdioen().set_bit());
+    }
 
+    pub fn dma2_enable(&self) {
+        self.rcc.ahb1enr.modify(|_r, w| w.dma2en().set_bit());
     }
 }

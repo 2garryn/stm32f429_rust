@@ -75,10 +75,19 @@ impl SdioApi {
         self.sdio.clkcr.modify(|_r, w| w.widbus().bus_width4());
     }
     pub fn bypass_div(&self) {
-        self.sdio.clkcr.modify(|_r, w| w.bypass().enabled());
+        self.sdio.clkcr.modify(|_, w| 
+            w.clkdiv().bits(30) // 300khz
+        );
+        //self.sdio.clkcr.modify(|_r, w| w.bypass().enabled());
     }
     pub fn default_block_size(&self) -> u32 {
         self.block_size
+    }
+    pub fn datacount(&self) -> u32 {
+        self.sdio.dcount.read().datacount().bits()
+    }
+    pub fn dma_enable(&self) {
+        self.sdio.dctrl.modify(|_, w| w.dmaen().enabled())
     }
 
     pub fn preread_config(&self, dtimeout: u32, dlength: u32, transfer_mode: DataTransfMode) {
@@ -94,6 +103,64 @@ impl SdioApi {
                 DataTransfMode::Stream => w.dtmode().stream_mode()
             }
         });
+    }
+
+
+    pub fn read_block(&self,  buf: &mut [u8]) -> Result<(), CardError> {
+        let mut dataremains = self.block_size;
+        loop {
+            let sta = self.sdio.sta.read();
+            let stop = sta.rxoverr().is_overrun() || 
+                sta.dcrcfail().is_failed() ||
+                sta.dtimeout().is_timeout() ||
+                sta.dataend().is_done();
+            if stop {
+                break;
+            }
+            if sta.rxfifohf().is_half_full() && dataremains > 0  {
+                for _ in 0..8 {
+                    let data: u32 = self.sdio.fifo.read().fifodata().bits();
+                    buf[(self.block_size - dataremains) as usize] = (data & 0xff) as u8;
+                    dataremains -= 1;
+                    buf[(self.block_size - dataremains) as usize] = ((data >> 8) & 0xff) as u8;
+                    dataremains -= 1;
+                    buf[(self.block_size - dataremains) as usize] = ((data >> 16) & 0xff) as u8;
+                    dataremains -= 1;
+                    buf[(self.block_size - dataremains) as usize] = ((data >> 24) & 0xff) as u8;
+                    dataremains -= 1;
+                }
+            }
+
+        }
+
+        loop {
+            let sta = self.sdio.sta.read();
+            if sta.rxdavl().is_available() && dataremains > 0  {
+                let data: u32 = self.sdio.fifo.read().fifodata().bits();
+                buf[(self.block_size - dataremains) as usize] = (data & 0xff) as u8;
+                dataremains -= 1;
+                buf[(self.block_size - dataremains) as usize] = ((data >> 8) & 0xff) as u8;
+                dataremains -= 1;
+                buf[(self.block_size - dataremains) as usize] = ((data >> 16) & 0xff) as u8;
+                dataremains -= 1;
+                buf[(self.block_size - dataremains) as usize] = ((data >> 24) & 0xff) as u8;
+                dataremains -= 1;
+            } else {
+                break;
+            }
+        }
+
+        self.sdio.icr.modify(|_, w| 
+            w.dcrcfailc().set_bit()
+            .dtimeoutc().set_bit()
+            .txunderrc().set_bit()
+            .rxoverrc().set_bit()
+            .dataendc().set_bit()
+            .dbckendc().set_bit()
+        );
+        
+        Ok(())
+
     }
 
     pub fn no_op(&self, clk: u64) {
@@ -156,6 +223,7 @@ impl SdioApi {
         let r = self.parse_response1(17)?;
         Ok(r)
     }
+    
     // SEND_IF_COND available only for card v2.0
     pub fn cmd8(&self) -> Result<(), CardError> {
         /*
