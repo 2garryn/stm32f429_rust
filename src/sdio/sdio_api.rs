@@ -114,7 +114,7 @@ impl SdioApi {
         });
     }
 
-
+/*
     pub fn read_block(&self,  buf: &mut [u8]) -> Result<(), CardError> {
         let mut dataremains = self.block_size;
         loop {
@@ -162,7 +162,7 @@ impl SdioApi {
         self.clear_data_flags();
         Ok(())
     }
-
+*/
     pub fn clear_data_flags(&self) {
         self.sdio.icr.modify(|_, w| 
             w.dcrcfailc().set_bit()
